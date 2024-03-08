@@ -14,7 +14,6 @@ from world import World
 class Application:
 
     def __init__(self):
-        self.diamond_model = None
         self.render_distance = 12.0
 
     @staticmethod
@@ -57,22 +56,6 @@ class Application:
                 RenderableModelTransformer(
                     RenderableFloor(8.0, 8.0),
                     lambda: translate((0, -1, 0))
-                )
-            )
-
-        draw_earth = False
-        if draw_earth:
-
-            # add center earth with smaller earths around it
-
-            earth = RenderablePlanet('./assets/earth.png')
-
-            scene.add_model(
-                RenderableModelTransformer(
-                    earth,
-                     lambda: translate((0, 0.0, 0)) @
-                             scale(4.0) @
-                             rotate((0, 1, 0), world.time())
                 )
             )
 
@@ -133,20 +116,6 @@ class Application:
                     lambda: translate((+0.0, 0.0, 0)) @
                             scale((1.0, 1.0, 1.0)) @
                             rotate((0, 1, 0), 1 * world.time())
-                )
-            )
-
-        draw_diamond = False
-        if draw_diamond:
-            self.diamond_model = RenderableDiamond()
-
-            scene.add_model(
-                RenderableModelTransformer(
-                    self.diamond_model,
-                    lambda: translate((0, 0.0, 0)) @
-                            rotate((1, 0, 0), 0.2 * world.time()) @
-                            rotate((0, 0, 1), 0.3 * world.time()) @
-                            rotate((0, 1, 0), 0.1 * world.time())
                 )
             )
 
@@ -214,45 +183,6 @@ class Application:
             match key:
                 case glfw.KEY_ESCAPE:
                     glfw.set_window_should_close(window, True)
-                case glfw.KEY_0:
-                    if self.diamond_model is not None:
-                        self.diamond_model.cut_mode = 0
-                case glfw.KEY_1:
-                    if self.diamond_model is not None:
-                        self.diamond_model.cut_mode = 1 if self.diamond_model.cut_mode != 1 else 0
-                case glfw.KEY_2:
-                    if self.diamond_model is not None:
-                        self.diamond_model.cut_mode = 2 if self.diamond_model.cut_mode != 2 else 0
-                case glfw.KEY_3:
-                    if self.diamond_model is not None:
-                        self.diamond_model.cut_mode = 3 if self.diamond_model.cut_mode != 3 else 0
-                case glfw.KEY_C:
-                    if self.diamond_model is not None:
-                        self.diamond_model.color_mode = (self.diamond_model.color_mode + 1) % 2
-                case glfw.KEY_RIGHT_BRACKET:
-                    if self.diamond_model is not None:
-                        if (mods & glfw.MOD_ALT) != 0:
-                            self.render_distance =  max(0.0, self.render_distance - 5.0)
-                        elif (mods & glfw.MOD_SHIFT) != 0:
-                            self.diamond_model.unit_cells_per_dimension = self.diamond_model.unit_cells_per_dimension + 2
-                        else:
-                            self.diamond_model.crystal_side_length = self.diamond_model.crystal_side_length + 1.0
-                case glfw.KEY_LEFT_BRACKET:
-                        if self.diamond_model is not None:
-                            if (mods & glfw.MOD_ALT) != 0:
-                                self.render_distance = self.render_distance + 5.0
-                            elif (mods & glfw.MOD_SHIFT) != 0:
-                                self.diamond_model.unit_cells_per_dimension = max(1, self.diamond_model.unit_cells_per_dimension - 2)
-                            else:
-                                self.diamond_model.crystal_side_length = max(0, self.diamond_model.crystal_side_length - 1.0)
-
-            if self.diamond_model is not None:
-                print('render distance {} diamond cut: {} diamond unit_cells_per_dimension: {} diamond crystal_side_length: {}'.format(
-                    self.render_distance,
-                    self.diamond_model.cut_mode,
-                    self.diamond_model.unit_cells_per_dimension,
-                    self.diamond_model.crystal_side_length
-                ))
 
 
 def main():
