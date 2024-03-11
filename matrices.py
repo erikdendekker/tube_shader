@@ -1,9 +1,9 @@
-"""Construct OpenGL transformation matrices and apply them"""
+""" Construct and apply OpenGL transformation matrices """
 import numpy as np
 
 
 def translate(translation_vector, dtype=None) -> np.ndarray:
-    """Return a 4x4 translation matrix"""
+    """ Create 4x4 translation matrix """
 
     if dtype is None:
         dtype = np.float64
@@ -11,7 +11,7 @@ def translate(translation_vector, dtype=None) -> np.ndarray:
     t = np.asarray(translation_vector, dtype=dtype)
 
     if t.shape != (3, ):
-        raise ValueError("Bad translation_vector argument")
+        raise ValueError('Bad translation_vector argument')
 
     return np.array([
         [1, 0, 0, t[0]],
@@ -22,7 +22,7 @@ def translate(translation_vector, dtype=None) -> np.ndarray:
 
 
 def scale(scale_coefficients, dtype=None) -> np.ndarray:
-    """Return a 4x4 matrix for general per-dimension scaling.
+    """ Create 4x4 uniform or non-uniform scaling matrix
 
     The scale argument should either be a 1- or 3-element vector of scale coefficients.
     """
@@ -36,7 +36,7 @@ def scale(scale_coefficients, dtype=None) -> np.ndarray:
         s = np.repeat(s, 3)
 
     if s.shape != (3, ):
-        raise ValueError("Bad scale_coefficients argument")
+        raise ValueError('Bad scale_coefficients argument')
 
     return np.array([
         [s[0], 0, 0, 0],
@@ -47,7 +47,7 @@ def scale(scale_coefficients, dtype=None) -> np.ndarray:
 
 
 def rotate(rotation_axis, angle: float, dtype=None) -> np.ndarray:
-    """Return a rotation matrix"""
+    """ Create rotation matrix """
 
     if dtype is None:
         dtype = np.float64
@@ -55,7 +55,7 @@ def rotate(rotation_axis, angle: float, dtype=None) -> np.ndarray:
     r = np.asarray(rotation_axis, dtype=dtype)
 
     if r.shape != (3, ):
-        raise ValueError("Bad rotation_axis argument")
+        raise ValueError('Bad rotation_axis argument')
 
     r /= np.linalg.norm(r)
 
@@ -73,7 +73,7 @@ def rotate(rotation_axis, angle: float, dtype=None) -> np.ndarray:
 
 
 def frustum(left: float, right: float, bottom: float, top: float, near: float, far: float, dtype=None) -> np.ndarray:
-    """Return a frustum projection matrix"""
+    """ Create frustum projection matrix """
 
     if dtype is None:
         dtype = np.float64
@@ -88,7 +88,7 @@ def frustum(left: float, right: float, bottom: float, top: float, near: float, f
 
 def perspective_projection(framebuffer_width: int, framebuffer_height: int,
                            fov_degrees: float, near: float, far: float, dtype=None) -> np.ndarray:
-    """Return a perspective projection matrix"""
+    """ Create perspective projection matrix """
 
     if dtype is None:
         dtype = np.float64
@@ -103,19 +103,19 @@ def perspective_projection(framebuffer_width: int, framebuffer_height: int,
         frustum_height = frustum_width * framebuffer_height / framebuffer_width
 
     return frustum(
-        -0.5 * frustum_width, +0.5 * frustum_width,
+        -0.5 * frustum_width,  +0.5 * frustum_width,
         -0.5 * frustum_height, +0.5 * frustum_height,
         near, far, dtype=dtype)
 
 
 def apply_transform_to_vertices(m_xform: np.ndarray, vertices: np.ndarray) -> np.ndarray:
-    """Apply the given transform to the given array of vertices"""
+    """ Apply transform to array of vertices """
     if m_xform is None:
         return vertices
 
     ok = m_xform.shape == (4, 4) and (vertices.ndim == 2) and (vertices.shape[1] == 3)
     if not ok:
-        raise ValueError("Bad transform requested")
+        raise ValueError('Bad transform requested')
 
     n = len(vertices)
 
@@ -128,14 +128,14 @@ def apply_transform_to_vertices(m_xform: np.ndarray, vertices: np.ndarray) -> np
 
 
 def apply_transform_to_normals(m_xform: np.ndarray, normals: np.ndarray) -> np.ndarray:
-    """Apply the given transform to the given array of normal vectors"""
+    """ Apply transform to array of normal vectors """
 
     if m_xform is None:
         return normals
 
     ok = m_xform.shape == (4, 4) and (normals.ndim == 2) and (normals.shape[1] == 3)
     if not ok:
-        raise ValueError("Bad transform requested")
+        raise ValueError('Bad transform requested')
 
     n = len(normals)
 
@@ -149,6 +149,6 @@ def apply_transform_to_normals(m_xform: np.ndarray, normals: np.ndarray) -> np.n
     normals /= np.linalg.norm(normals, axis=1, keepdims=True)
 
     if not np.all(np.abs(np.linalg.norm(normals, axis=1) - 1.0) < 1e-12):
-        raise RuntimeError("normals are not unit length after normalization")
+        raise RuntimeError('normals are not unit length after normalization')
 
     return normals

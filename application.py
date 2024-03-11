@@ -1,14 +1,47 @@
 #! /usr/bin/env python3
 import numpy as np
-
 import glfw
 from OpenGL.GL import *
 
 from matrices import translate, rotate, scale, perspective_projection
-
-from renderables import (RenderablePlanet, RenderableFloor, RenderableScene, RenderableModelTransformer, RenderableDiamond, RenderableSphereImpostor, RenderableCylinderImpostor)
-
+from floor import Floor
+from scene import Scene
+from transformer import Transformer
+from sphere_imposter import SphereImpostor
+from cylinder_imposter import CylinderImpostor
 from world import World
+
+
+def create_scene(world: World) -> Scene:
+    scene = Scene()
+
+    scene.add_model(
+        Transformer(
+            Floor(8.0, 8.0),
+            lambda: translate((0, -1, 0))
+        )
+    )
+
+    scene.add_model(
+        Transformer(
+            CylinderImpostor('./assets/moon.png'),
+            lambda: translate((+0.25, 0.0, 0)) @
+                    rotate((0, 1, 0), 0.0 * world.time()) @
+                    rotate((1, 0, 0), 0.5 * world.time()) @
+                    scale((0.2, 0.2, 4.0))
+        )
+    )
+
+    scene.add_model(
+        Transformer(
+            SphereImpostor('./assets/earth.png'),
+            lambda: translate((+0.0, 0.0, 0)) @
+                    scale((1.0, 1.0, 1.0)) @
+                    rotate((0, 1, 0), 1 * world.time())
+        )
+    )
+
+    return scene
 
 
 class Application:
@@ -45,84 +78,11 @@ class Application:
 
         glfw.make_context_current(window)
 
+        # Create World and Scene
         world = World()
-
-        # Create the scene model
-        scene = RenderableScene()
-
-        draw_floor = True
-        if draw_floor:
-            scene.add_model(
-                RenderableModelTransformer(
-                    RenderableFloor(8.0, 8.0),
-                    lambda: translate((0, -1, 0))
-                )
-            )
-
-        draw_sphere_impostor = False
-        if draw_sphere_impostor:
-
-            sphere_imposter_constellation = RenderableScene()
-
-            earth = RenderableSphereImpostor('./assets/earth.png')
-
-            sphere_imposter_constellation.add_model(
-                RenderableModelTransformer(
-                    earth,
-                    lambda: translate((+0.8, 0.0, 0)) @
-                            scale((1.0, 1.0, 1.0)) @
-                            rotate((0, 1, 0), 0 * world.time())
-                )
-            )
-
-            moon = RenderableSphereImpostor('./assets/moon.png')
-
-            sphere_imposter_constellation.add_model(
-                RenderableModelTransformer(
-                    moon,
-                    lambda: translate((-0.8, 0.0, 0.3)) @
-                            scale((1.0, 1.0, 1.0)) @
-                            rotate((0, 1, 0), 0 * world.time())
-                )
-            )
-
-            scene.add_model(
-                RenderableModelTransformer(
-                    sphere_imposter_constellation,
-                    lambda: rotate((0, 1, 0), 1 * world.time())
-                )
-            )
-
-        draw_cylinder_impostor = True
-        if draw_cylinder_impostor:
-
-            cylinder_impostor = RenderableCylinderImpostor('./assets/moon.png')
-
-            scene.add_model(
-                RenderableModelTransformer(
-                    cylinder_impostor,
-                    lambda: translate((+0.25, 0.0, 0)) @
-                            rotate((0, 1, 0), 0.0 * world.time()) @
-                            rotate((1, 0, 0), 0.5 * world.time()) @
-                            scale((0.2, 0.2, 4.0))
-                )
-            )
-
-            sphere_impostor = RenderableSphereImpostor('./assets/earth.png')
-
-            scene.add_model(
-                RenderableModelTransformer(
-                    sphere_impostor,
-                    lambda: translate((+0.0, 0.0, 0)) @
-                            scale((1.0, 1.0, 1.0)) @
-                            rotate((0, 1, 0), 1 * world.time())
-                )
-            )
+        scene = create_scene(world)
 
         # Prepare loop
-        frame_counter = 0
-        t_prev = None
-
         glfw.swap_interval(1)
         glPointSize(1)
 
@@ -136,14 +96,16 @@ class Application:
         near_plane = 0.5
         far_plane = 1000.0
 
+        frame_nr = 0
+        t_prev = None
         while not glfw.window_should_close(window):
 
-            t_now = world.sample_time()
+            t_curr = world.sample_time()
 
             if t_prev is not None:
-                frame_duration = (t_now - t_prev)
-                #print("@@ {:20.4f} ms".format(frame_duration * 1000.0))
-            t_prev = t_now
+                fps = 1.0 / (t_curr - t_prev)
+                glfw.set_window_title(window, f'frame: {frame_nr}, fps: {fps:.1f} Hz')
+            t_prev = t_curr
 
             # Make view matrix
             m_view = translate((0.0, 0, -self.render_distance)) @ rotate((0, 1, 0), world.time() * 0.0)
@@ -165,7 +127,7 @@ class Application:
 
             glfw.swap_buffers(window)
             glfw.poll_events()
-            frame_counter += 1
+            frame_nr += 1
 
         scene.close()
 

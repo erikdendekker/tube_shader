@@ -1,15 +1,15 @@
-"""Construct geometric objects as lists of triangles"""
+""" Construct geometric objects as lists of triangles """
 import numpy as np
 
 
 def normalize(v) -> np.ndarray:
-    """Normalize a vector"""
+    """ Normalize vector """
     vec = np.asarray(v)
     return vec / np.linalg.norm(vec)
 
 
 def _make_unit_sphere_triangles_recursive(triangle, recursion_level: int) -> list:
-    """Perform recursive triangle subdivision and normalization to unit length"""
+    """ Perform recursive triangle subdivision and normalization to unit length """
     if recursion_level == 0:
         return [triangle]
 
@@ -30,7 +30,7 @@ def _make_unit_sphere_triangles_recursive(triangle, recursion_level: int) -> lis
 
 
 def make_unit_sphere_triangles_tetrahedron(recursion_level: int):
-    """Make unit planet by subdividing a tetrahedron"""
+    """ Make unit sphere by subdividing a tetrahedron """
 
     v1 = normalize((-1.0, -1.0, -1.0))
     v2 = normalize((+1.0, +1.0, -1.0))
@@ -53,7 +53,7 @@ def make_unit_sphere_triangles_tetrahedron(recursion_level: int):
 
 
 def make_unit_sphere_triangles(recursion_level: int):
-    """Make unit planet by subdividing a dodecahedron"""
+    """ Make unit sphere by subdividing a dodecahedron """
 
     # Note: distance of center of each face to the origin is  0.7946544722917661,
     #   or sqrt((5+2*sqrt(5))/15)
