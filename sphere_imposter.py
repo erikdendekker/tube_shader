@@ -19,9 +19,10 @@ uniform mat4 model_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
 
+uniform mat4 projection_view_model_matrix;
+uniform mat4 view_model_matrix;
 
 out VS_OUT {
-    vec3 m_coordinate;
     vec3 mv_coordinate;
 } vs_out;
 
@@ -30,13 +31,10 @@ void main()
 {
     // Make 4D vertex from 3D value
     vec4 v = vec4(a_vertex, 1.0);
-    mat4 mvp = (projection_matrix * view_matrix * model_matrix);
 
-    vs_out.m_coordinate = (model_matrix * v).xyz;
-    vs_out.mv_coordinate = (view_matrix * model_matrix * v).xyz;
+    vs_out.mv_coordinate = (view_model_matrix * v).xyz;
 
-    gl_Position = mvp * v;
-//  tex_coord = texture_coordinate;
+    gl_Position = projection_view_model_matrix * v;
 }
 '''
 
@@ -46,13 +44,16 @@ fragment_shader = '''
 out vec4 fragment_color;
 
 in VS_OUT {
-    vec3 m_coordinate;
     vec3 mv_coordinate;
 } fs_in;
 
 uniform mat4 model_matrix;
 uniform mat4 view_matrix;
 uniform mat4 projection_matrix;
+
+uniform mat4 inverse_view_model_matrix;
+uniform mat4 projection_view_model_matrix;
+uniform mat4 transposed_inverse_projection_view_model_matrix;
 
 uniform sampler2D my_texture;
 
@@ -63,13 +64,11 @@ void main()
 {
     // We receive model and modelview coordinates from the vertex shader
 
-    mat4 inverse_model_view_matrix = inverse(view_matrix * model_matrix);
-
     // "e" is the eye position in the "unit sphere" coordinate system
-    vec3 e = (inverse_model_view_matrix * vec4(0, 0, 0, 1)).xyz;
+    vec3 e = (inverse_view_model_matrix * vec4(0, 0, 0, 1)).xyz;
 
     // "h" is the impostor hitpoint position in the "unit sphere" coordinate system
-    vec3 h = (inverse_model_view_matrix * vec4(fs_in.mv_coordinate, 1)).xyz;
+    vec3 h = (inverse_view_model_matrix * vec4(fs_in.mv_coordinate, 1)).xyz;
 
     // Solve:    ray[alpha] := e + alpha * (h - e)
     // Find the smallest real value alpha such that ray[alpha]) intersects the unit sphere
@@ -84,6 +83,8 @@ void main()
 
     if (discriminant < 0)
     {
+//      fragment_color = vec4(1.0, 1.0, 0.0, 1.0);
+//      return;
         discard; // The ray that hits the impostor doesn't hit the enclosed sphere
     }
 
@@ -102,7 +103,7 @@ void main()
 
     fragment_color = texture(my_texture, vec2(u, v));
 
-    vec4 projection = projection_matrix * view_matrix * model_matrix * vec4(sphere_hit, 1);
+    vec4 projection = projection_view_model_matrix * vec4(sphere_hit, 1);
 
     gl_FragDepth = 0.5 + 0.5 *  (projection.z / projection.w);
 }
@@ -115,9 +116,14 @@ class SphereImpostor(Renderable):
         (self._shaders, self._shader_program) = create_opengl_program(vertex_shader=vertex_shader,
                                                                       fragment_shader=fragment_shader)
 
-        self._model_matrix_location      = glGetUniformLocation(self._shader_program, 'model_matrix')
-        self._view_matrix_location       = glGetUniformLocation(self._shader_program, 'view_matrix')
-        self._projection_matrix_location = glGetUniformLocation(self._shader_program, 'projection_matrix')
+        self._model_matrix_location                                    = glGetUniformLocation(self._shader_program,      'model_matrix')
+        self._view_matrix_location                                     = glGetUniformLocation(self._shader_program,       'view_matrix')
+        self._projection_matrix_location                               = glGetUniformLocation(self._shader_program, 'projection_matrix')
+
+        self._view_model_matrix_location                               = glGetUniformLocation(self._shader_program,                               "view_model_matrix")
+        self._projection_view_model_matrix_location                    = glGetUniformLocation(self._shader_program,                    "projection_view_model_matrix")
+        self._inverse_view_model_matrix_location                       = glGetUniformLocation(self._shader_program,                       "inverse_view_model_matrix")
+        self._transposed_inverse_projection_view_model_matrix_location = glGetUniformLocation(self._shader_program, "transposed_inverse_projection_view_model_matrix")
 
         self._texture = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self._texture)
@@ -200,9 +206,14 @@ class SphereImpostor(Renderable):
 
         glUseProgram(self._shader_program)
 
-        glUniformMatrix4fv(self._model_matrix_location,      1, GL_TRUE, model_matrix     .astype(np.float32))
-        glUniformMatrix4fv(self._view_matrix_location,       1, GL_TRUE, view_matrix      .astype(np.float32))
-        glUniformMatrix4fv(self._projection_matrix_location, 1, GL_TRUE, projection_matrix.astype(np.float32))
+        glUniformMatrix4fv(self._model_matrix_location,                                    1, GL_TRUE, model_matrix     .astype(np.float32))
+        glUniformMatrix4fv(self._view_matrix_location,                                     1, GL_TRUE, view_matrix      .astype(np.float32))
+        glUniformMatrix4fv(self._projection_matrix_location,                               1, GL_TRUE, projection_matrix.astype(np.float32))
+
+        glUniformMatrix4fv(self._view_model_matrix_location,                               1, GL_TRUE,                                  (view_matrix @ model_matrix)  .astype(np.float32))
+        glUniformMatrix4fv(self._projection_view_model_matrix_location,                    1, GL_TRUE,              (projection_matrix @ view_matrix @ model_matrix)  .astype(np.float32))
+        glUniformMatrix4fv(self._inverse_view_model_matrix_location,                       1, GL_TRUE, np.linalg.inv(                    view_matrix @ model_matrix)  .astype(np.float32))
+        glUniformMatrix4fv(self._transposed_inverse_projection_view_model_matrix_location, 1, GL_TRUE, np.linalg.inv(projection_matrix @ view_matrix @ model_matrix).T.astype(np.float32))
 
         glBindTexture(GL_TEXTURE_2D, self._texture)
         glBindVertexArray(self._vao)
