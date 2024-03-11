@@ -117,8 +117,6 @@ def apply_transform_to_vertices(m_xform: np.ndarray, vertices: np.ndarray) -> np
     if not ok:
         raise ValueError('Bad transform requested')
 
-    n = len(vertices)
-
     # Append constant '1' column
     vertices = np.pad(vertices, pad_width=((0, 0), (0, 1)), constant_values=1.0)
     vertices = (m_xform @ vertices.T).T
@@ -136,8 +134,6 @@ def apply_transform_to_normals(m_xform: np.ndarray, normals: np.ndarray) -> np.n
     ok = m_xform.shape == (4, 4) and (normals.ndim == 2) and (normals.shape[1] == 3)
     if not ok:
         raise ValueError('Bad transform requested')
-
-    n = len(normals)
 
     # Append constant '0' column
     normals = np.pad(normals, pad_width=((0, 0), (0, 1)), constant_values=0.0)
