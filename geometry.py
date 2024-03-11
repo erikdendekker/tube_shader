@@ -4,8 +4,8 @@ import numpy as np
 
 def normalize(v) -> np.ndarray:
     """ Normalize vector """
-    vec = np.asarray(v)
-    return vec / np.linalg.norm(vec)
+    v = np.asarray(v)
+    return v / np.linalg.norm(v)
 
 
 def _make_unit_sphere_triangles_recursive(triangle, recursion_level: int) -> list:
@@ -94,13 +94,14 @@ def make_unit_sphere_triangles(recursion_level: int):
     return triangles
 
 
-def make_cylinder_triangles(subdivision_count: int, caps: bool) -> tuple[list, list]:
+def make_cylinder_triangles(subdivision_count: int, capped: bool):
+    """ Make triangle mesh of a unit cylinder """
 
-    zlo = -0.5
-    zhi = +0.5
+    z_lo = -0.5
+    z_hi = +0.5
 
-    normals = []
     triangles = []
+
     for i in range(subdivision_count):
         a0 = (i + 0) / subdivision_count * 2.0 * np.pi
         a1 = (i + 1) / subdivision_count * 2.0 * np.pi
@@ -110,17 +111,10 @@ def make_cylinder_triangles(subdivision_count: int, caps: bool) -> tuple[list, l
         x1 = np.cos(a1)
         y1 = np.sin(a1)
 
-        triangle = ((x0, y0, zlo), (x1, y1, zlo), (x0, y0, zhi))
-        normal = ((x0, y0, 0), (x1, y1, 0), (x0, y0, 0))
-        triangles.append(triangle)
-        normals.append(normal)
+        triangles.append(((x0, y0, z_lo), (x1, y1, z_lo), (x0, y0, z_hi)))
+        triangles.append(((x1, y1, z_lo), (x1, y1, z_hi), (x0, y0, z_hi)))
 
-        triangle = ((x1, y1, zlo), (x1, y1, zhi), (x0, y0, zhi))
-        normal = ((x1, y1, 0), (x1, y1, 0), (x0, y0, 0))
-        triangles.append(triangle)
-        normals.append(normal)
-
-    if caps:
+    if capped:
         for i in range(subdivision_count):
             a0 = (i + 0) / subdivision_count * 2.0 * np.pi
             a1 = (i + 1) / subdivision_count * 2.0 * np.pi
@@ -130,13 +124,37 @@ def make_cylinder_triangles(subdivision_count: int, caps: bool) -> tuple[list, l
             x1 = np.cos(a1)
             y1 = np.sin(a1)
 
-            triangle = ((0, 0, zhi), (x0, y0, zhi), (x1, y1, zhi))
-            normal = ((0, 0, 1), (0, 0, 1), (0, 0, 1))
-            triangles.append(triangle)
-            normals.append(normal)
-            triangle = ((0, 0, zlo), (x1, y1, zlo), (x0, y0, zlo))
-            normal = ((0, 0, -1), (0, 0, -1), (0, 0, -1))
-            triangles.append(triangle)
-            normals.append(normal)
+            triangles.append(((0, 0, z_hi), (x0, y0, z_hi), (x1, y1, z_hi)))
+            triangles.append(((0, 0, z_lo), (x1, y1, z_lo), (x0, y0, z_lo)))
 
-    return triangles, normals
+    return triangles
+
+
+def make_cylinder_placement_transform(p1, p2, diameter) -> np.ndarray:
+    """ Create cylinder placement transformation matrix """
+    # Assume unit cylinder with r=1 and extending from z= -0.5 to +0.5, scale its diameter and place it such that it extends from p1 to p2
+    p1 = np.asarray(p1)
+    p2 = np.asarray(p2)
+    p_vector = p2 - p1
+
+    # NOTE: Contains incorrect GUI warnings because np.cross() triggers a code reachability analysis bug in PyCharm!
+    u = np.array((0, 0, 1))
+    v = normalize(p_vector)
+    rotation_angle = np.arccos(np.dot(u, v))
+    rotation_vector = np.cross(u, v)
+
+    if np.linalg.norm(rotation_vector) == 0:  # u is precisely parallel to v
+       if rotation_angle > 0:
+           orientation_matrix = scale(+1.0)   # Identity matrix
+       else:
+           orientation_matrix = scale(-1.0)
+    else:
+       orientation_matrix = rotate(rotation_vector, rotation_angle)
+
+    # Apply a translation, scaling, rotation, and translation
+    placement_matrix = translate(p1)                                         @ \
+                       orientation_matrix                                    @ \
+                       scale((diameter, diameter, np.linalg.norm(p_vector))) @ \
+                       translate((0, 0, 0.5))
+
+    return placement_matrix
