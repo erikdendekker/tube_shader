@@ -14,6 +14,6 @@ class Scene(Renderable):
     def add_model(self, model):
         self._models.append(model)
 
-    def render(self, m_projection, m_view, m_model):
+    def render(self, projection_matrix, view_matrix, model_matrix):
         for model in self._models:
-            model.render(m_projection, m_view, m_model)
+            model.render(projection_matrix, view_matrix, model_matrix)

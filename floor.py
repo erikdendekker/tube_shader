@@ -13,7 +13,7 @@ layout(location = 0) in vec2 vec;
 
 out vec2 fpos;
 
-uniform mat4 mvp;
+uniform mat4 projection_view_model_matrix;
 
 
 void main()
@@ -21,7 +21,7 @@ void main()
     // Make 4D vertex from 2D value
     fpos = vec;
     vec4 v = vec4(vec.x, 0.0, vec.y, 1.0);
-    gl_Position = mvp * v;
+    gl_Position = projection_view_model_matrix * v;
 }
 '''
 
@@ -74,7 +74,7 @@ class Floor(Renderable):
         (self._shaders, self._shader_program) = create_opengl_program(vertex_shader=vertex_shader,
                                                                       fragment_shader=fragment_shader)
 
-        self._mvp_location = glGetUniformLocation(self._shader_program, 'mvp')
+        self._projection_view_model_matrix_location = glGetUniformLocation(self._shader_program, 'projection_view_model_matrix')
 
         vertex_data = np.array([
             (-0.5 * h_size, -0.5 * v_size),
@@ -128,14 +128,14 @@ class Floor(Renderable):
                 glDeleteShader(shader)
             self._shaders = None
 
-    def render(self, m_projection, m_view, m_model):
+    def render(self, projection_matrix, view_matrix, model_matrix):
 
         glUseProgram(self._shader_program)
 
-        mvp = m_projection @ m_view @ m_model
-        glUniformMatrix4fv(self._mvp_location, 1, GL_TRUE, mvp.astype(np.float32))
+        projection_view_model_matrix = projection_matrix @ view_matrix @ model_matrix
+        glUniformMatrix4fv(self._projection_view_model_matrix_location, 1, GL_TRUE, projection_view_model_matrix.astype(np.float32))
 
-        glDisable(GL_CULL_FACE)
+        glEnable(GL_CULL_FACE)
 
         glBindVertexArray(self._vao)
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)

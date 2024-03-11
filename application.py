@@ -73,8 +73,8 @@ class Application:
         # Create a GLFW window and set it as the current OpenGL context
         window = Application.create_glfw_window(4, 1)
 
-        glfw.set_framebuffer_size_callback(window, lambda *args: Application.framebuffer_size_callback(*args))
-        glfw.set_key_callback(window, lambda *args: self.key_callback(*args))
+        glfw.set_framebuffer_size_callback(window, lambda *args: self._framebuffer_size_callback(*args))
+        glfw.set_key_callback             (window, lambda *args: self._key_callback(*args))
 
         glfw.make_context_current(window)
 
@@ -107,28 +107,34 @@ class Application:
                 glfw.set_window_title(window, f'frame: {frame_nr}, fps: {fps:.1f} Hz')
             t_previous_wallclock = t_wallclock
 
-            # Sample time to ensure all queries to world.time() will be identical
+            # Sample time to ensure all queries to world.time() up until next sample_time() will give same time value
             world.sample_time()
 
             # Make view matrix
-            m_view = translate((0.0, 0, -self.render_distance)) @ rotate((0, 1, 0), world.time() * 0.0)
+            view_matrix = translate((0.0, 0, -self.render_distance)) @ rotate((0, 1, 0), world.time() * 0.0)
 
             # Make model matrix
-            m_model = np.identity(4)
+            model_matrix = np.identity(4)
 
-            # Make perspective projection matrix
+            # Determine frame buffer size
             (framebuffer_width, framebuffer_height) = glfw.get_framebuffer_size(window)
+            if framebuffer_width > 0 and framebuffer_height > 0:
 
-            if framebuffer_width * framebuffer_height == 0:
-                continue
+                # Make perspective projection matrix
+                projection_matrix = perspective_projection(framebuffer_width,
+                                                           framebuffer_height,
+                                                           fov_degrees,
+                                                           near_plane,
+                                                           far_plane)
 
-            m_projection = perspective_projection(framebuffer_width, framebuffer_height, fov_degrees, near_plane, far_plane)
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+                scene.render(projection_matrix,
+                             view_matrix,
+                             model_matrix)
 
-            scene.render(m_projection, m_view, m_model)
+                glfw.swap_buffers(window)
 
-            glfw.swap_buffers(window)
             glfw.poll_events()
             frame_nr += 1
 
@@ -138,11 +144,11 @@ class Application:
         glfw.terminate()
 
     @staticmethod
-    def framebuffer_size_callback(_window, width, height):
+    def _framebuffer_size_callback(_window, width, height):
         print('Resizing framebuffer:', width, height)
         glViewport(0, 0, width, height)
 
-    def key_callback(self, window, key: int, scancode: int, action: int, mods: int):
+    def _key_callback(self, window, key: int, scancode: int, action: int, mods: int):
 
         if action in (glfw.PRESS, glfw.REPEAT):
             match key:
