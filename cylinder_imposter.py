@@ -58,11 +58,25 @@ uniform mat4 projection_matrix;
 uniform sampler2D my_texture;
 
 const float pi = 4 * atan(1);
+const float nan = 0.0 / 0.0;
 
 
-float squared(float x)
+float intersect_unit_cylinder(vec2 origin, vec2 direction)
 {
-    return x * x;
+    // See: https://en.wikipedia.org/wiki/Line–sphere_intersection
+    // Find smallest real alpha such that: origin + alpha * direction is on the unit circle
+    float oo = dot(origin, origin);
+    float uo = dot(direction, origin);
+    float uu = dot(direction, direction);
+    float discriminant = uo*uo - uu * (oo - 1);
+
+    // Early abort if a solution does not exist (Check can be omitted, but it is adventageous to keep it for improved performance)
+    if (discriminant < 0)
+    {
+        return nan;
+    }
+
+    return (-uo - sqrt(discriminant)) / uu;
 }
 
 
@@ -85,21 +99,15 @@ void main()
     // Find the smallest real value alpha such that ray[alpha]) intersects the unit cylinder
 
     vec3 eh = h - e;
-    float eh_xy_dot_eh_xy = dot(eh.xy, eh.xy);
 
-    float discriminant = eh_xy_dot_eh_xy - squared(e.x * h.y - e.y * h.x);
+    float alpha = intersect_unit_cylinder(e.xy, eh.xy);
 
-    if (discriminant < 0)
+     if (isnan(alpha))
     {
-        // The ray that hits the impostor doesn't hit the enclosed cylinder
 //      fragment_color = vec4(1.0, 1.0, 0.0, 1.0);
+//      return;
         discard;
     }
-
-    float e_xy_dot_e_xy = dot(e.xy, e.xy);
-    float e_xy_dot_h_xy = dot(e.xy, h.xy);
-
-    float alpha = (e_xy_dot_e_xy - e_xy_dot_h_xy - sqrt(discriminant)) / eh_xy_dot_eh_xy;
 
     // This is the point where the ray and the unit cylinder intersect in the "unit cylinder" coordinate system
     // Its xy coordinates are normalized since they are a point on the unit cylinder
@@ -109,6 +117,7 @@ void main()
     {
         // The cylinder is hit, but outside its z range [-0.5 .. +0.5]
 //      fragment_color = vec4(0.0, 1.0, 1.0, 1.0);
+//      return;
         discard;
     }
 
