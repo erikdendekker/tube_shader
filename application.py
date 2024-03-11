@@ -97,15 +97,18 @@ class Application:
         far_plane = 1000.0
 
         frame_nr = 0
-        t_prev = None
+        t_previous_wallclock = None
         while not glfw.window_should_close(window):
 
-            t_curr = world.sample_time()
+            t_wallclock = glfw.get_time()
 
-            if t_prev is not None:
-                fps = 1.0 / (t_curr - t_prev)
+            if t_previous_wallclock is not None:
+                fps = 1.0 / (t_wallclock - t_previous_wallclock)
                 glfw.set_window_title(window, f'frame: {frame_nr}, fps: {fps:.1f} Hz')
-            t_prev = t_curr
+            t_previous_wallclock = t_wallclock
+
+            # Sample time to ensure all queries to world.time() will be identical
+            world.sample_time()
 
             # Make view matrix
             m_view = translate((0.0, 0, -self.render_distance)) @ rotate((0, 1, 0), world.time() * 0.0)
