@@ -70,18 +70,15 @@ void main()
 class Floor(Renderable):
 
     def __init__(self, h_size: float, v_size: float):
-
         (self._shaders, self._shader_program) = create_opengl_program(vertex_shader=vertex_shader,
                                                                       fragment_shader=fragment_shader)
 
         self._projection_view_model_matrix_location = glGetUniformLocation(self._shader_program, 'projection_view_model_matrix')
 
-        vertex_data = np.array([
-            (-0.5 * h_size, -0.5 * v_size),
-            (-0.5 * h_size, +0.5 * v_size),
-            (+0.5 * h_size, -0.5 * v_size),
-            (+0.5 * h_size, +0.5 * v_size)
-        ], dtype=np.float32)
+        vertex_data = np.array(((-0.5 * h_size, -0.5 * v_size),
+                                (-0.5 * h_size, +0.5 * v_size),
+                                (+0.5 * h_size, -0.5 * v_size),
+                                (+0.5 * h_size, +0.5 * v_size)), dtype=np.float32)
 
         # Make Vertex Buffer Object (VBO)
         self._vbo = glGenBuffers(1)
@@ -91,12 +88,10 @@ class Floor(Renderable):
 
         # Create a vertex array object (VAO)
         # If a GL_ARRAY_BUFFER is bound, it will be associated with the VAO
-
         self._vao = glGenVertexArrays(1)
         glBindVertexArray(self._vao)
 
         # Defines the attribute with index 0 in the current VAO
-
         attribute_index = 0
         glVertexAttribPointer(attribute_index, 2, GL_FLOAT, GL_FALSE, 0, None)
 
@@ -110,7 +105,6 @@ class Floor(Renderable):
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def close(self):
-
         if self._vao is not None:
             glDeleteVertexArrays(1, (self._vao,))
             self._vao = None
@@ -129,7 +123,6 @@ class Floor(Renderable):
             self._shaders = None
 
     def render(self, projection_matrix, view_matrix, model_matrix):
-
         glUseProgram(self._shader_program)
 
         projection_view_model_matrix = projection_matrix @ view_matrix @ model_matrix

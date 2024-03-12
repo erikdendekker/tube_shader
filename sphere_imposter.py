@@ -188,17 +188,12 @@ class SphereImpostor(Renderable):
         print(f'triangles: {len(triangles)}')
 
         triangle_vertices = np.array(triangles).reshape(-1, 3)
-
         triangle_vertices = np.multiply(triangle_vertices, 1.3)  # Oversize the impostor
-
         triangle_vertices = apply_transform_to_vertices(m_xform, triangle_vertices)
 
         print(f'triangle_vertices shape: {triangle_vertices.shape}')
 
-        vbo_dtype = np.dtype([
-            ('a_vertex', np.float32, 3)
-        ])
-
+        vbo_dtype = np.dtype([('a_vertex', np.float32, 3)])
         vbo_data = np.empty(dtype=vbo_dtype, shape=len(triangle_vertices))
         vbo_data['a_vertex'] = triangle_vertices
 
@@ -212,12 +207,10 @@ class SphereImpostor(Renderable):
 
         # Create a vertex array object (VAO)
         # If a GL_ARRAY_BUFFER is bound, it will be associated with the VAO
-
         self._vao = glGenVertexArrays(1)
         glBindVertexArray(self._vao)
 
         # Defines the attribute with index 0 in the current VAO
-
         attribute_index = 0  # 3D vertex coordinates
         glVertexAttribPointer(attribute_index, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
         glEnableVertexAttribArray(attribute_index)
@@ -229,7 +222,6 @@ class SphereImpostor(Renderable):
         glBindBuffer(GL_ARRAY_BUFFER, 0)
 
     def close(self):
-
         if self._vao is not None:
             glDeleteVertexArrays(1, (self._vao, ))
             self._vao = None
@@ -248,7 +240,6 @@ class SphereImpostor(Renderable):
             self._shaders = None
 
     def render(self, projection_matrix, view_matrix, model_matrix):
-
         glUseProgram(self._shader_program)
 
         glUniformMatrix4fv(self._model_matrix_location,                                    1, GL_TRUE, model_matrix     .astype(np.float32))

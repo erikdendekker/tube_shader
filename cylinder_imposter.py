@@ -174,7 +174,6 @@ void main()
 class CylinderImpostor(Renderable):
 
     def __init__(self, texture_path : str, m_xform=None):
-
         (self._shaders, self._shader_program) = create_opengl_program(vertex_shader=vertex_shader,
                                                                       fragment_shader=fragment_shader)
 
@@ -207,19 +206,13 @@ class CylinderImpostor(Renderable):
         print("triangles:", len(triangles))
 
         triangle_vertices = np.array(triangles).reshape(-1, 3)
-
         triangle_vertices = np.multiply(triangle_vertices, (1.25, 1.25, 1.05))  # Oversize the impostor
-
         triangle_vertices = apply_transform_to_vertices(m_xform, triangle_vertices)
 
         print("triangle_vertices shape:", triangle_vertices.shape)
 
-        vbo_dtype = np.dtype([
-            ("a_vertex", np.float32, 3)
-        ])
-
+        vbo_dtype = np.dtype([("a_vertex", np.float32, 3)])
         vbo_data = np.empty(dtype=vbo_dtype, shape=len(triangle_vertices))
-
         vbo_data["a_vertex"] = triangle_vertices  # Oversize the impostor
 
         self._num_points = len(vbo_data)
@@ -232,12 +225,10 @@ class CylinderImpostor(Renderable):
 
         # Create a vertex array object (VAO)
         # If a GL_ARRAY_BUFFER is bound, it will be associated with the VAO
-
         self._vao = glGenVertexArrays(1)
         glBindVertexArray(self._vao)
 
         # Defines the attribute with index 0 in the current VAO
-
         attribute_index = 0  # 3D vertex coordinates
         glVertexAttribPointer(attribute_index, 3, GL_FLOAT, GL_FALSE, 12, ctypes.c_void_p(0))
         glEnableVertexAttribArray(attribute_index)
